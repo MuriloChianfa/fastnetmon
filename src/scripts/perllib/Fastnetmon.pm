@@ -729,8 +729,8 @@ sub install_log4cpp {
         # For arm64 build we need multiple fixes
         # checking build system type... config/config.guess: unable to guess system type
         # configure: error: cannot guess build type; you must specify one
-        exec_command("curl https://raw.githubusercontent.com/pavel-odintsov/config/master/config.guess -o./config/config.guess");
-        exec_command("curl https://raw.githubusercontent.com/pavel-odintsov/config/master/config.sub -o./config/config.sub");
+        exec_command("curl https://raw.githubusercontent.com/MuriloChianfa/config/master/config.guess -o./config/config.guess");
+        exec_command("curl https://raw.githubusercontent.com/MuriloChianfa/config/master/config.sub -o./config/config.sub");
     }
 
     print "Build log4cpp\n";
@@ -1450,122 +1450,122 @@ sub get_logical_cpus_number {
 
 # Detect operating system of this machine
 sub detect_distribution { 
-    my $distro_type = '';
-    my $distro_version = '';
+    my $distro_type = 'debian';
+    my $distro_version = '11.6';
     my $appliance_name = '';
-    my $distro_architecture = '';
+    my $distro_architecture = 'x86_64';
 
     my $os_type = get_os_type();
 
-    if ($os_type eq 'linux') {
-        # x86_64 or i686
-        $distro_architecture = `uname -m`;
-        chomp $distro_architecture;
+    # if ($os_type eq 'linux') {
+    #     # x86_64 or i686
+    #     $distro_architecture = `uname -m`;
+    #     chomp $distro_architecture;
 
-        if (-e "/etc/debian_version") {
-            # Well, on this step it could be Ubuntu or Debian
+    #     if (-e "/etc/debian_version") {
+    #         # Well, on this step it could be Ubuntu or Debian
 
-            # We need check issue for more details 
-            my @issue = `cat /etc/issue`;
-            chomp @issue;
+    #         # We need check issue for more details 
+    #         my @issue = `cat /etc/issue`;
+    #         chomp @issue;
 
-            my $issue_first_line = $issue[0];
+    #         my $issue_first_line = $issue[0];
 
-            # Possible /etc/issue contents: 
-            # Debian GNU/Linux 8 \n \l
-            # Ubuntu 14.04.2 LTS \n \l
-            # Welcome to VyOS - \n \l 
-            my $is_proxmox = '';
+    #         # Possible /etc/issue contents: 
+    #         # Debian GNU/Linux 8 \n \l
+    #         # Ubuntu 14.04.2 LTS \n \l
+    #         # Welcome to VyOS - \n \l 
+    #         my $is_proxmox = '';
 
-            # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
-            for my $issue_line (@issue) {
-                if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
-                    $is_proxmox = 1;
-                    $appliance_name = 'proxmox';
-                    last;
-                }
-            }
+    #         # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
+    #         for my $issue_line (@issue) {
+    #             if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
+    #                 $is_proxmox = 1;
+    #                 $appliance_name = 'proxmox';
+    #                 last;
+    #             }
+    #         }
 
-            if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
-                $distro_type = 'debian';
+    #         if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
+    #             $distro_type = 'debian';
 
-                $distro_version = `cat /etc/debian_version`;
-                chomp $distro_version;
+    #             $distro_version = `cat /etc/debian_version`;
+    #             chomp $distro_version;
 
-                # 
-                # Debian 6 example: 6.0.10
-                # We will try transform it to decimal number
-                if ($distro_version =~ /^(\d+)\.\d+\.\d+$/) {
-                    $distro_version = $1;
-                } elsif ($distro_version =~ /^(\d+)\.\d+$/) {
-                    # Examples: 9.13, 10.13, 11.5
-                    $distro_version = $1;
-                }
-            } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
-                $distro_type = 'ubuntu';
-                $distro_version = $1;
-            } elsif ($issue_first_line =~ m/VyOS/) {
-                # Yes, VyOS is a Debian
-                $distro_type = 'debian';
-                $appliance_name = 'vyos';
+    #             # 
+    #             # Debian 6 example: 6.0.10
+    #             # We will try transform it to decimal number
+    #             if ($distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+    #                 $distro_version = $1;
+    #             } elsif ($distro_version =~ /^(\d+)\.\d+$/) {
+    #                 # Examples: 9.13, 10.13, 11.5
+    #                 $distro_version = $1;
+    #             }
+    #         } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
+    #             $distro_type = 'ubuntu';
+    #             $distro_version = $1;
+    #         } elsif ($issue_first_line =~ m/VyOS/) {
+    #             # Yes, VyOS is a Debian
+    #             $distro_type = 'debian';
+    #             $appliance_name = 'vyos';
 
-                my $vyos_distro_version = `cat /etc/debian_version`;
-                chomp $vyos_distro_version;
+    #             my $vyos_distro_version = `cat /etc/debian_version`;
+    #             chomp $vyos_distro_version;
 
-                # VyOS have strange version and we should fix it
-                if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
-                    $distro_version = $1;
-                }
-            }
-        }
+    #             # VyOS have strange version and we should fix it
+    #             if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+    #                 $distro_version = $1;
+    #             }
+    #         }
+    #     }
 
-        if (-e "/etc/redhat-release") {
-            $distro_type = 'centos';
+    #     if (-e "/etc/redhat-release") {
+    #         $distro_type = 'centos';
 
-            my $distro_version_raw = `cat /etc/redhat-release`;
-            chomp $distro_version_raw;
+    #         my $distro_version_raw = `cat /etc/redhat-release`;
+    #         chomp $distro_version_raw;
 
-            # CentOS 6:
-            # CentOS release 6.6 (Final)
-            # CentOS 7:
-            # CentOS Linux release 7.0.1406 (Core) 
-            # Fedora release 21 (Twenty One)
-            if ($distro_version_raw =~ /(\d+)/) {
-                $distro_version = $1;
-            }
-        }
+    #         # CentOS 6:
+    #         # CentOS release 6.6 (Final)
+    #         # CentOS 7:
+    #         # CentOS Linux release 7.0.1406 (Core) 
+    #         # Fedora release 21 (Twenty One)
+    #         if ($distro_version_raw =~ /(\d+)/) {
+    #             $distro_version = $1;
+    #         }
+    #     }
 
-        if (-e "/etc/gentoo-release") {
-            $distro_type = 'gentoo';
+    #     if (-e "/etc/gentoo-release") {
+    #         $distro_type = 'gentoo';
 
-            my $distro_version_raw = `cat /etc/gentoo-release`;
-            chomp $distro_version_raw;
-        }
+    #         my $distro_version_raw = `cat /etc/gentoo-release`;
+    #         chomp $distro_version_raw;
+    #     }
 
-        unless ($distro_type) {
-            die "This distro is unsupported, please do manual install";
-        }
+    #     unless ($distro_type) {
+    #         die "This distro is unsupported, please do manual install";
+    #     }
 
-        print "We detected your OS as $distro_type Linux $distro_version\n";
-    } elsif ($os_type eq 'macosx') {
-        my $mac_os_versions_raw = `sw_vers -productVersion`;
-        chomp $mac_os_versions_raw;
+    #     print "We detected your OS as $distro_type Linux $distro_version\n";
+    # } elsif ($os_type eq 'macosx') {
+    #     my $mac_os_versions_raw = `sw_vers -productVersion`;
+    #     chomp $mac_os_versions_raw;
 
-        if ($mac_os_versions_raw =~ /(\d+\.\d+)/) {
-            $distro_version = $1; 
-        }
+    #     if ($mac_os_versions_raw =~ /(\d+\.\d+)/) {
+    #         $distro_version = $1; 
+    #     }
 
-        print "We detected your OS as Mac OS X $distro_version\n";
-    } elsif ($os_type eq 'freebsd') {
-        my $freebsd_os_version_raw = `uname -r`;
-        chomp $freebsd_os_version_raw;
+    #     print "We detected your OS as Mac OS X $distro_version\n";
+    # } elsif ($os_type eq 'freebsd') {
+    #     my $freebsd_os_version_raw = `uname -r`;
+    #     chomp $freebsd_os_version_raw;
 
-        if ($freebsd_os_version_raw =~ /^(\d+)\.?/) {
-            $distro_version = $1;
-        }
+    #     if ($freebsd_os_version_raw =~ /^(\d+)\.?/) {
+    #         $distro_version = $1;
+    #     }
 
-        print "We detected your OS as FreeBSD $distro_version\n";
-    } 
+    #     print "We detected your OS as FreeBSD $distro_version\n";
+    # } 
 
     return { 
         'distro_version' => $distro_version,

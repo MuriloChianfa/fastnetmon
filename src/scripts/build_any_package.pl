@@ -78,7 +78,7 @@ DOC
             die "Cannot copy fastnetmon.conf from $conf_path to $rpm_sources_path/fastnetmon.conf\n";
         }
     } else {
-        my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf");
+        my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/MuriloChianfa/fastnetmon/master/src/fastnetmon.conf -O$rpm_sources_path/fastnetmon.conf");
    
         if ($wget_res != 0) {
             die "Cannot download fastnetmon.conf\n";
@@ -435,7 +435,7 @@ DOC
             die "Cannot copy fastnetmon.conf from $conf_path to $folder_for_build/etc/fastnetmon.conf\n";
         }
     } else {
-        my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/pavel-odintsov/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf");
+        my $wget_res = system("wget --no-check-certificate https://raw.githubusercontent.com/MuriloChianfa/fastnetmon/master/src/fastnetmon.conf -O$folder_for_build/etc/fastnetmon.conf");
    
         if ($wget_res != 0) {
             die "Cannot download fastnetmon.conf\n";

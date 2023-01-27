@@ -30,7 +30,8 @@ if (defined($ENV{'CI'}) && $ENV{'CI'}) {
     $install_log_path = "/tmp/fastnetmon_install.log";
 }
 
-my $fastnetmon_git_path = 'https://github.com/pavel-odintsov/fastnetmon.git';
+# TODO: trocar para o repo clone
+my $fastnetmon_git_path = 'https://github.com/MuriloChianfa/fastnetmon.git';
 
 my $temp_folder_for_building_project = `mktemp -d /tmp/fastnetmon.build.dir.XXXXXXXXXX`;
 chomp $temp_folder_for_building_project;
@@ -163,133 +164,139 @@ sub detect_distribution {
     # We use following global variables here:
     # $os_type, $distro_type, $distro_version, $appliance_name
 
-    my $uname_s_output = `uname -s`;
-    chomp $uname_s_output;
+    my $distro_type = 'debian';
+    my $distro_version = '11.6';
+    my $appliance_name = '';
+    my $distro_architecture = 'x86_64';
 
-    # uname -a output examples:
-    # FreeBSD  10.1-STABLE FreeBSD 10.1-STABLE #0 r278618: Thu Feb 12 13:55:09 UTC 2015     root@:/usr/obj/usr/src/sys/KERNELWITHNETMAP  amd64
-    # Darwin MacBook-Pro-Pavel.local 14.5.0 Darwin Kernel Version 14.5.0: Wed Jul 29 02:26:53 PDT 2015; root:xnu-2782.40.9~1/RELEASE_X86_64 x86_64
-    # Linux ubuntu 3.16.0-30-generic #40~14.04.1-Ubuntu SMP Thu Jan 15 17:43:14 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+    my $os_type = 'linux';
+    # my $uname_s_output = `uname -s`;
+    # chomp $uname_s_output;
 
-    if ($uname_s_output =~ /FreeBSD/) {
-        $os_type = 'freebsd';
-    } elsif ($uname_s_output =~ /Darwin/) {
-        $os_type = 'macosx';
-    } elsif ($uname_s_output =~ /Linux/) {
-        $os_type = 'linux';
-    } else {
-        warn "Can't detect platform operating system\n";
-    }
+    # # uname -a output examples:
+    # # FreeBSD  10.1-STABLE FreeBSD 10.1-STABLE #0 r278618: Thu Feb 12 13:55:09 UTC 2015     root@:/usr/obj/usr/src/sys/KERNELWITHNETMAP  amd64
+    # # Darwin MacBook-Pro-Pavel.local 14.5.0 Darwin Kernel Version 14.5.0: Wed Jul 29 02:26:53 PDT 2015; root:xnu-2782.40.9~1/RELEASE_X86_64 x86_64
+    # # Linux ubuntu 3.16.0-30-generic #40~14.04.1-Ubuntu SMP Thu Jan 15 17:43:14 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
 
-    if ($os_type eq 'linux') {
-        # x86_64 or i686
-        $distro_architecture = `uname -m`;
-        chomp $distro_architecture;
+    # if ($uname_s_output =~ /FreeBSD/) {
+    #     $os_type = 'freebsd';
+    # } elsif ($uname_s_output =~ /Darwin/) {
+    #     $os_type = 'macosx';
+    # } elsif ($uname_s_output =~ /Linux/) {
+    #     $os_type = 'linux';
+    # } else {
+    #     warn "Can't detect platform operating system\n";
+    # }
 
-        if (-e "/etc/debian_version") {
-            # Well, on this step it could be Ubuntu or Debian
+    # if ($os_type eq 'linux') {
+    #     # x86_64 or i686
+    #     $distro_architecture = `uname -m`;
+    #     chomp $distro_architecture;
 
-            # We need check issue for more details 
-            my @issue = `cat /etc/issue`;
-            chomp @issue;
+    #     if (-e "/etc/debian_version") {
+    #         # Well, on this step it could be Ubuntu or Debian
 
-            my $issue_first_line = $issue[0];
+    #         # We need check issue for more details 
+    #         my @issue = `cat /etc/issue`;
+    #         chomp @issue;
 
-            # Possible /etc/issue contents: 
-            # Debian GNU/Linux 8 \n \l
-            # Ubuntu 14.04.2 LTS \n \l
-            # Welcome to VyOS - \n \l 
-            my $is_proxmox = '';
+    #         my $issue_first_line = $issue[0];
 
-            # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
-            for my $issue_line (@issue) {
-                if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
-                    $is_proxmox = 1;
-                    $appliance_name = 'proxmox';
-                    last;
-                }
-            }
+    #         # Possible /etc/issue contents: 
+    #         # Debian GNU/Linux 8 \n \l
+    #         # Ubuntu 14.04.2 LTS \n \l
+    #         # Welcome to VyOS - \n \l 
+    #         my $is_proxmox = '';
 
-            if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
-                $distro_type = 'debian';
+    #         # Really hard to detect https://github.com/proxmox/pve-manager/blob/master/bin/pvebanner
+    #         for my $issue_line (@issue) {
+    #             if ($issue_line =~ m/Welcome to the Proxmox Virtual Environment/) {
+    #                 $is_proxmox = 1;
+    #                 $appliance_name = 'proxmox';
+    #                 last;
+    #             }
+    #         }
 
-                $distro_version = `cat /etc/debian_version`;
-                chomp $distro_version;
+    #         if ($issue_first_line =~ m/Debian/ or $is_proxmox) {
+    #             $distro_type = 'debian';
 
-                # Debian 6 example: 6.0.10
-                # We will try transform it to decimal number
-                if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
-                    $distro_version = $1;
-                }
-            } elsif ($issue_first_line =~ m/Ubuntu Jammy Jellyfish/) {
-                # It's pre release Ubuntu 22.04
-                $distro_type = 'ubuntu';
-                $distro_version = "22.04";
-            } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
-                $distro_type = 'ubuntu';
-                $distro_version = $1;
-            } elsif ($issue_first_line =~ m/VyOS/) {
-                # Yes, VyOS is a Debian
-                $distro_type = 'debian';
-                $appliance_name = 'vyos';
+    #             $distro_version = `cat /etc/debian_version`;
+    #             chomp $distro_version;
 
-                my $vyos_distro_version = `cat /etc/debian_version`;
-                chomp $vyos_distro_version;
+    #             # Debian 6 example: 6.0.10
+    #             # We will try transform it to decimal number
+    #             if ($distro_version =~ /^(\d+\.\d+)\.\d+$/) {
+    #                 $distro_version = $1;
+    #             }
+    #         } elsif ($issue_first_line =~ m/Ubuntu Jammy Jellyfish/) {
+    #             # It's pre release Ubuntu 22.04
+    #             $distro_type = 'ubuntu';
+    #             $distro_version = "22.04";
+    #         } elsif ($issue_first_line =~ m/Ubuntu (\d+(?:\.\d+)?)/) {
+    #             $distro_type = 'ubuntu';
+    #             $distro_version = $1;
+    #         } elsif ($issue_first_line =~ m/VyOS/) {
+    #             # Yes, VyOS is a Debian
+    #             $distro_type = 'debian';
+    #             $appliance_name = 'vyos';
 
-                # VyOS have strange version and we should fix it
-                if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
-                    $distro_version = $1;
-                }
-            }
-        }
+    #             my $vyos_distro_version = `cat /etc/debian_version`;
+    #             chomp $vyos_distro_version;
 
-        if (-e "/etc/redhat-release") {
-            $distro_type = 'centos';
+    #             # VyOS have strange version and we should fix it
+    #             if ($vyos_distro_version =~ /^(\d+)\.\d+\.\d+$/) {
+    #                 $distro_version = $1;
+    #             }
+    #         }
+    #     }
 
-            my $distro_version_raw = `cat /etc/redhat-release`;
-            chomp $distro_version_raw;
+    #     if (-e "/etc/redhat-release") {
+    #         $distro_type = 'centos';
 
-            # CentOS 6:
-            # CentOS release 6.6 (Final)
-            # CentOS 7:
-            # CentOS Linux release 7.0.1406 (Core) 
-            # Fedora release 21 (Twenty One)
-            if ($distro_version_raw =~ /(\d+)/) {
-                $distro_version = $1;
-            }
-        }
+    #         my $distro_version_raw = `cat /etc/redhat-release`;
+    #         chomp $distro_version_raw;
 
-        if (-e "/etc/gentoo-release") {
-            $distro_type = 'gentoo';
+    #         # CentOS 6:
+    #         # CentOS release 6.6 (Final)
+    #         # CentOS 7:
+    #         # CentOS Linux release 7.0.1406 (Core) 
+    #         # Fedora release 21 (Twenty One)
+    #         if ($distro_version_raw =~ /(\d+)/) {
+    #             $distro_version = $1;
+    #         }
+    #     }
 
-            my $distro_version_raw = `cat /etc/gentoo-release`;
-            chomp $distro_version_raw;
-        }
+    #     if (-e "/etc/gentoo-release") {
+    #         $distro_type = 'gentoo';
 
-        unless ($distro_type) {
-            die("This distro is unsupported");
-        }
+    #         my $distro_version_raw = `cat /etc/gentoo-release`;
+    #         chomp $distro_version_raw;
+    #     }
 
-        print "We detected your OS as $distro_type Linux $distro_version\n";
-    } elsif ($os_type eq 'macosx') {
-        my $mac_os_versions_raw = `sw_vers -productVersion`;
-        chomp $mac_os_versions_raw;
+    #     unless ($distro_type) {
+    #         die("This distro is unsupported");
+    #     }
 
-        if ($mac_os_versions_raw =~ /(\d+\.\d+)/) {
-            $distro_version = $1; 
-        }
+    #     print "We detected your OS as $distro_type Linux $distro_version\n";
+    # } elsif ($os_type eq 'macosx') {
+    #     my $mac_os_versions_raw = `sw_vers -productVersion`;
+    #     chomp $mac_os_versions_raw;
 
-        print "We detected your OS as Mac OS X $distro_version\n";
-    } elsif ($os_type eq 'freebsd') {
-        my $freebsd_os_version_raw = `uname -r`;
-        chomp $freebsd_os_version_raw;
+    #     if ($mac_os_versions_raw =~ /(\d+\.\d+)/) {
+    #         $distro_version = $1; 
+    #     }
 
-        if ($freebsd_os_version_raw =~ /^(\d+)\.?/) {
-            $distro_version = $1;
-        }
+    #     print "We detected your OS as Mac OS X $distro_version\n";
+    # } elsif ($os_type eq 'freebsd') {
+    #     my $freebsd_os_version_raw = `uname -r`;
+    #     chomp $freebsd_os_version_raw;
 
-        print "We detected your OS as FreeBSD $distro_version\n";
-    } 
+    #     if ($freebsd_os_version_raw =~ /^(\d+)\.?/) {
+    #         $distro_version = $1;
+    #     }
+
+    #     print "We detected your OS as FreeBSD $distro_version\n";
+    # } 
 }
 
 sub apt_get {
